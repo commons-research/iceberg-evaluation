@@ -27,4 +27,5 @@ dev = [
     "ipykernel>=6.29.5",
     "ipywidgets>=8.1.7",
     "jupyterlab>=4.4.3",
+    "ruff>=0.11.12",
 ]

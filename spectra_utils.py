@@ -1,16 +1,12 @@
-import os
 import typing as T
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from cache_decorator import Cache
 from matchms import Spectrum
-from matchms.exporting import save_as_mgf
 from matchms.filtering import default_filters
 from matchms.logging_functions import set_matchms_logger_level
 from pandarallel import pandarallel
-from tqdm import tqdm
 
 set_matchms_logger_level("ERROR")
 # Initialize pandarallel (add progress bar if you want)

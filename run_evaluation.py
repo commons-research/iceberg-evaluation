@@ -12,7 +12,7 @@ def main():
     )
 
     df = compute_all_similarities(df, msdata, "results/iceberg_res.mgf")
-    df.to_csv("evaluation_results.tsv", index=False, sep="\t")
+    df.to_csv("results/evaluation_results.tsv", index=False, sep="\t")
 
 
 if __name__ == "__main__":

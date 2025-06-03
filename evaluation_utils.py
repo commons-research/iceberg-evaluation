@@ -69,8 +69,6 @@ def compute_all_similarities(
     dict_of_results = create_empty_dict(similarity_metrics)
 
     for i, row in tqdm(df.reset_index().iterrows(), total=len(df)):
-        if i == 20:
-            break
 
         smiles = row["smiles"]
         inchikey = row["inchikey"]
@@ -150,6 +148,10 @@ def compute_dreams_embeddings(
 def pair_similarity_from_dreams_embedding(
     embedding1: np.ndarray, embedding2: np.ndarray
 ) -> List[np.float32]:
+    if embedding1.shape != embedding2.shape:
+        raise ValueError(
+            f"Embeddings must have the same shape, got {embedding1.shape} and {embedding2.shape}"
+        )
     ls = []
     for i in range(embedding1.shape[0]):
         ls.append(cosine_similarity([embedding1[i], embedding2[i]])[0][1])

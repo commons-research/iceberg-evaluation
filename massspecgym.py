@@ -1,8 +1,10 @@
 import typing as T
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from cache_decorator import Cache
+from dreams.utils.data import MSData
 from huggingface_hub import hf_hub_download
 
 
@@ -43,3 +45,24 @@ def load_massspecgym(fold: T.Optional[str] = None) -> pd.DataFrame:
         lambda row: np.array([row["mzs"], row["intensities"]]), axis=1
     )
     return df
+
+
+def load_msdata(path: str, in_mem: bool, **kwargs) -> MSData:
+    """
+    Load MSData from a given path. If the hdf5 of that file already exists,
+    it will load the MSData from that file. Otherwise, it will create a new
+    MSData object from the given path and save it to the hdf5 file.
+    """
+    if isinstance(path, str):
+        path = Path(path)
+
+    hdf5_pth = path.with_suffix(".hdf5")
+    if hdf5_pth.exists():
+        return MSData.from_hdf5(hdf5_pth, in_mem=in_mem, **kwargs)
+    else:
+        msdata = MSData.load(
+            path,
+            in_mem=in_mem,
+            **kwargs,
+        )
+        return msdata

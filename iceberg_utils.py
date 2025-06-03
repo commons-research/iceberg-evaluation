@@ -11,8 +11,8 @@ from ms_pred.dag_pred import joint_model
 from rdkit import Chem
 
 # Get best models
-INTEN_CKPT = f"./models/iceberg/canopus_iceberg_score.ckpt"
-GEN_CKPT = f"./models/iceberg/canopus_iceberg_generate.ckpt"
+INTEN_CKPT = "./models/iceberg/canopus_iceberg_score.ckpt"
+GEN_CKPT = "./models/iceberg/canopus_iceberg_generate.ckpt"
 
 
 MODEL = joint_model.JointModel.from_checkpoints(
