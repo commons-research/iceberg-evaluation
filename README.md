@@ -1,10 +1,24 @@
+# Installation 
+If `uv sync` fails, you probably need to install golang first in order to compile it.
+
+First install golang:
+```bash
+sudo apt-get install golang-go
+```
+Then you can run : 
+```bash
+go install golang.org/dl/go1.24.3@latest
+```
+
+Then you should be able to run `uv sync` without any issues.
+
+
 # Download models
 ```bash
-wget https://zenodo.org/record/8433354/files/canopus_iceberg_models.zip -O canopus_iceberg_models.zip
-mkdir models/iceberg
+bash download_iceberg_ckpt.sh
+```
 
-mv canopus_iceberg_models.zip models/iceberg/canopus_iceberg_models.zip
-unzip models/iceberg/canopus_iceberg_models.zip
-mv canopus_iceberg_generate.ckpt models/iceberg/canopus_iceberg_generate.ckpt
-mv canopus_iceberg_score.ckpt models/iceberg/canopus_iceberg_score.ckpt
+# Run the evaluation
+```bash
+uv run run_evaluation.py
 ```
