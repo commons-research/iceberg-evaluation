@@ -60,6 +60,8 @@ def compute_all_similarities(
 
     if output_mgf_path.exists():
         os.remove(output_mgf_path)
+    if output_mgf_path.with_suffix(".hdf5").exists():
+        os.remove(output_mgf_path.with_suffix(".hdf5"))
 
     similarity_metrics = [
         CosineGreedy(),

@@ -2,6 +2,7 @@ import typing as T
 from collections import defaultdict
 
 import numpy as np
+from cache_decorator import Cache
 from matchms import Spectrum
 from matchms.filtering import default_filters, derive_smiles_from_inchi
 from matchms.filtering.filter_utils.derive_precursor_mz_and_parent_mass import (
@@ -85,10 +86,18 @@ def convert_iceberg_to_spectrum(result: T.Dict[str, T.Any], adduct: str) -> Spec
     return convert_mass_to_objects_to_spectrum(mass_to_obj, root_inchi, adduct)
 
 
+@Cache(use_approximated_hash=True)
+def _predict_mol(smiles: str, adduct: str, **kwargs) -> T.Dict[str, T.Any]:
+    return MODEL.predict_mol(
+        smiles,
+        adduct=adduct,
+        **kwargs,
+    )
+
+
 def predict(
     smiles: str,
     adduct: str,
-    model: joint_model.JointModel = MODEL,
     **kwargs,
 ) -> Spectrum:
     """
@@ -102,9 +111,5 @@ def predict(
     Returns:
         Spectrum: The predicted spectrum.
     """
-    result = model.predict_mol(
-        smiles,
-        adduct=adduct,
-        **kwargs,
-    )
+    result = _predict_mol(smiles, adduct, **kwargs)
     return convert_iceberg_to_spectrum(result, adduct)
