@@ -25,9 +25,10 @@ def main():
     cfm_output_specs = res_folder / "cfm_out"
     cfm_batch_scripts = res_folder / "batches"
     cfm_batch_scripts.mkdir(exist_ok=True)
+    cfm_output_specs.mkdir(exist_ok=True)
 
     df = load_massspecgym().drop_duplicates("inchikey")
-    df = df[df["adduct"] == "[M+H]+"].iloc[:10]
+    df = df[df["adduct"] == "[M+H]+"]
     input_items = [f"{i} {j}" for i, j in df[["inchikey", "smiles"]].values]
 
     _ = run_cfmid(
@@ -39,24 +40,32 @@ def main():
     )
 
     spectra: T.List[Spectrum] = []
+    mgf_folder = res_folder / "cfmid_mgf"
+    mgf_folder.mkdir(exist_ok=True)
     for file in tqdm(
         os.listdir(cfm_output_specs), desc="Converting CFM-ID output to MGF"
     ):
-        convert_to_mgf(cfm_output_specs / file)
+        mgf_file_name = (mgf_folder / file).with_suffix(".mgf")
+        with open(cfm_output_specs / file, "r") as f:
+            converted_text = convert_to_mgf(f.read())
+
+        # Write the converted text to a new file
+        with open(mgf_file_name, "w") as f:
+            f.write(converted_text)
         spectra.append(
             default_filters(
-                list(load_from_mgf(cfm_output_specs / file))[0],
+                list(load_from_mgf(mgf_file_name))[0],
             ),
         )
 
     # Save the spectra to MGF
     save_as_mgf(spectra, "results/cfmid_res.mgf", file_mode="w")
-    cfm_msdata = MSData.from_mgf(
-        "results/cfmid_res.mgf",
-        in_mem=True,
-        prec_mz_col="PRECURSOR_MZ",
-    )
-    cfm_embeddings = compute_dreams_embeddings(cfm_msdata)
+    # cfm_msdata = MSData.from_mgf(
+    # "results/cfmid_res.mgf",
+    # in_mem=True,
+    # prec_mz_col="PRECURSOR_MZ",
+    # )
+    # cfm_embeddings = compute_dreams_embeddings(cfm_msdata)
 
 
 @Cache(use_approximated_hash=False, args_to_ignore=["num_threads"])
@@ -118,43 +127,46 @@ def run_cfmid(
     )  # used only for caching otherwise the function would always run
 
 
-def convert_to_mgf(file_path: T.Union[str, Path]) -> None:
+@Cache(use_approximated_hash=False)
+def convert_to_mgf(
+    file_content: str,
+) -> str:
     output_lines = []
     mass_intensity_dict = {}
 
     # Metadata lines to remove '#' from
     metadata_keys = ["#ID=", "#SMILES=", "#InChiKey=", "#Formula="]
+    file_content = file_content.splitlines()
 
-    with open(file_path, "r") as file:
-        for line in file:
-            stripped_line = line.strip()
+    for line in file_content:
+        stripped_line = line.strip()
 
-            # Check for metadata lines
-            if any(stripped_line.startswith(key) for key in metadata_keys):
-                # Remove the leading '#' character
-                output_lines.append(stripped_line.lstrip("#"))
-            elif stripped_line.startswith("#PMass="):
-                # Replace with PEPMASS=
-                output_lines.append(stripped_line.replace("#PMass=", "PEPMASS="))
-            # Skip energy lines
-            elif stripped_line.startswith("energy"):
-                continue
-            # Process mass-intensity pairs
-            else:
-                parts = stripped_line.split()
-                if len(parts) == 2:
-                    try:
-                        mass = float(parts[0])
-                        intensity = float(parts[1])
-                        # Keep the highest intensity for each mass
-                        if (
-                            mass not in mass_intensity_dict
-                            or intensity > mass_intensity_dict[mass]
-                        ):
-                            mass_intensity_dict[mass] = intensity
-                    except ValueError:
-                        # Skip lines that don't parse correctly
-                        continue
+        # Check for metadata lines
+        if any(stripped_line.startswith(key) for key in metadata_keys):
+            # Remove the leading '#' character
+            output_lines.append(stripped_line.lstrip("#"))
+        elif stripped_line.startswith("#PMass="):
+            # Replace with PEPMASS=
+            output_lines.append(stripped_line.replace("#PMass=", "PEPMASS="))
+        # Skip energy lines
+        elif stripped_line.startswith("energy"):
+            continue
+        # Process mass-intensity pairs
+        else:
+            parts = stripped_line.split()
+            if len(parts) == 2:
+                try:
+                    mass = float(parts[0])
+                    intensity = float(parts[1])
+                    # Keep the highest intensity for each mass
+                    if (
+                        mass not in mass_intensity_dict
+                        or intensity > mass_intensity_dict[mass]
+                    ):
+                        mass_intensity_dict[mass] = intensity
+                except ValueError:
+                    # Skip lines that don't parse correctly
+                    continue
 
     # Add the cleaned mass-intensity pairs
     for mass, intensity in sorted(mass_intensity_dict.items()):
@@ -163,8 +175,8 @@ def convert_to_mgf(file_path: T.Union[str, Path]) -> None:
     output_lines = ["BEGIN IONS"] + ["ADDUCT=[M+H]+"] + output_lines + ["END IONS"]
 
     output_lines = "\n".join(output_lines)
-    with open(file_path, "w") as file:
-        file.write(output_lines)
+
+    return output_lines
 
 
 if __name__ == "__main__":
