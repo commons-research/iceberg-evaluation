@@ -1,6 +1,6 @@
 from cache_decorator import Cache
 
-from evaluation_utils import compute_all_similarities
+from iceberg_evaluation_utils import compute_all_similarities
 from massspecgym import load_massspecgym, load_msdata
 
 
